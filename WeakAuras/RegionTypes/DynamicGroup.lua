@@ -91,7 +91,7 @@ end
 
 local function releaseControlPoint(self, controlPoint)
   controlPoint:Hide()
-  controlPoint:SetAnchorPoint(self.parent.selfPoint)
+  controlPoint:ClearAnchorPoint()
   local regionData = controlPoint.regionData
   if regionData then
     if self.parent.anchorPerUnit == "UNITFRAME" then
@@ -1084,11 +1084,6 @@ local function modify(parent, region, data)
       controlPoint:SetShown(show and frame ~= WeakAuras.HiddenFrames)
       controlPoint:SetWidth(regionData.dimensions.width)
       controlPoint:SetHeight(regionData.dimensions.height)
-      if data.anchorFrameParent then
-        controlPoint:SetParent(frame == "" and self.relativeTo or frame)
-      else
-        controlPoint:SetParent(self)
-      end
       if self.anchorPerUnit == "UNITFRAME" then
         Private.dyngroup_unitframe_monitor[regionData] = frame
       end
