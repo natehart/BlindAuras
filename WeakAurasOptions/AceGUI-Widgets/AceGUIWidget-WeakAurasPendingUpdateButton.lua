@@ -7,7 +7,7 @@ local L = WeakAuras.L
 
 local pairs, next, type, unpack = pairs, next, type, unpack
 
-local Type, Version = "WeakAurasPendingUpdateButton", 3
+local Type, Version = "WeakAurasPendingUpdateButton", 2
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
 
 if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then
