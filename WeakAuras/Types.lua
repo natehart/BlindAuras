@@ -155,35 +155,27 @@ if WeakAuras.IsRetail() then
 end
 
 local simpleFormatters = {
-  AbbreviateNumbers = function(value)
-    if type(value) == "string" then value = tonumber(value) end
+  AbbreviateNumbers = function(value, state)
     return (type(value) == "number") and AbbreviateNumbers(value) or value
   end,
-  AbbreviateLargeNumbers = function(value)
-    if type(value) == "string" then value = tonumber(value) end
+  AbbreviateLargeNumbers = function(value, state)
     return (type(value) == "number") and AbbreviateLargeNumbers(Round(value)) or value
   end,
   floor = function(value)
-    if type(value) == "string" then value = tonumber(value) end
     return (type(value) == "number") and floor(value) or value
   end,
   ceil = function(value)
-    if type(value) == "string" then value = tonumber(value) end
     return (type(value) == "number") and ceil(value) or value
   end,
   round = function(value)
-    if type(value) == "string" then value = tonumber(value) end
     return (type(value) == "number") and Round(value) or value
   end,
   time = {
     [0] = function(value)
-      if type(value) == "string" then value = tonumber(value) end
-      if type(value) == "number" then
-        if value > 60 then
-          return string.format("%i:", math.floor(value / 60)) .. string.format("%02i", value % 60)
-        else
-          return string.format("%d", value)
-        end
+      if value > 60 then
+        return string.format("%i:", math.floor(value / 60)) .. string.format("%02i", value % 60)
+      else
+        return string.format("%d", value)
       end
     end,
     -- Old Blizzard
@@ -198,14 +190,11 @@ local simpleFormatters = {
     end,
     -- Fixed built-in formatter
     [99] = function(value)
-      if type(value) == "string" then value = tonumber(value) end
-      if type(value) == "number" then
-        value = ceil(value)
-        if value > 60 then
-          return string.format("%i:", math.floor(value / 60)) .. string.format("%02i", value % 60)
-        else
-          return string.format("%d", value)
-        end
+      value = ceil(value)
+      if value > 60 then
+        return string.format("%i:", math.floor(value / 60)) .. string.format("%02i", value % 60)
+      else
+        return string.format("%d", value)
       end
     end,
   },
@@ -1242,7 +1231,7 @@ Private.combatlog_flags_check_type = {
   Mine = L["Mine"],
   InGroup = L["In Group"],
   InParty = L["In Party"],
-  NotInGroup = L["Not in Smart Group"]
+  -- NotInGroup = L["Not in Smart Group"]
 }
 
 Private.combatlog_flags_check_reaction = {
@@ -2053,25 +2042,14 @@ if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
   Private.swing_types["ranged"] = RANGEDSLOT
 end
 
-if WeakAuras.IsWrathClassic() then
-  Private.rune_specific_types = {
-    [1] = L["Blood Rune #1"],
-    [2] = L["Blood Rune #2"],
-    [3] = L["Unholy Rune #1"],
-    [4] = L["Unholy Rune #2"],
-    [5] = L["Frost Rune #1"],
-    [6] = L["Frost Rune #2"],
-  }
-else
-  Private.rune_specific_types = {
-    [1] = L["Rune #1"],
-    [2] = L["Rune #2"],
-    [3] = L["Rune #3"],
-    [4] = L["Rune #4"],
-    [5] = L["Rune #5"],
-    [6] = L["Rune #6"]
-  }
-end
+Private.rune_specific_types = {
+  [1] = L["Rune #1"],
+  [2] = L["Rune #2"],
+  [3] = L["Rune #3"],
+  [4] = L["Rune #4"],
+  [5] = L["Rune #5"],
+  [6] = L["Rune #6"]
+}
 
 Private.custom_trigger_types = {
   ["event"] = L["Event"],
@@ -2298,10 +2276,11 @@ do
     [173] = L["Normal Party"],
     [174] = L["Heroic Party"],
     [175] = L["10 Player Raid"],
-    [176] = L["25 Player Raid"],
-    [193] = L["10 Player Raid (Heroic)"],
-    [194] = L["25 Player Raid (Heroic)"],
+    [176] = L["25 Player Raid"]
   }
+
+  local names = {}
+  local ids = {}
 
   for i = 1, 200 do
     local name, type = GetDifficultyInfo(i)
@@ -3071,7 +3050,6 @@ Private.author_option_fields = {
     hideReorder = true,
     entryNames = nil, -- handled as a special case in code
     subOptions = {},
-    noMerge = false,
   }
 }
 
@@ -3318,7 +3296,6 @@ Private.reset_ranged_swing_spells = {
   [2764] = true, -- Throw
   [5019] = true, -- Shoot Wands
   [75] = true, -- Auto Shot
-  [5384] = true, -- Feign Death
 }
 
 Private.noreset_swing_spells = {
@@ -3541,9 +3518,8 @@ if WeakAuras.IsClassic() then
     6807, 6808, 6809, 8972, 9745, 9880, 9881, -- Maul
     20549, -- War Stomp
     2480, 7919, 7918, 2764, 5019, -- Shoots
-    5384, -- Feign Death
   }
-  for _, spellid in ipairs(reset_swing_spell_list) do
+  for i, spellid in ipairs(reset_swing_spell_list) do
     Private.reset_swing_spells[spellid] = true
   end
 end
@@ -3571,8 +3547,7 @@ if WeakAuras.IsBCC() then
     11350, -- Fire Shield (Oil of Immolation)
     50986, -- Sulfuron Slammer
     439, 440, 441, 2024, 4042, 17534, 28495, -- Minor/Lesser/Greater/Superior/Major/Super Healing Potion
-    41619, 41620, -- Cenarion Healing Salve/Bottled Nethergon Vapor
-    5384, -- Feign Death
+    41619, 41620 -- Cenarion Healing Salve/Bottled Nethergon Vapor
   }
   for _, spellid in ipairs(reset_swing_spell_list) do
     Private.reset_swing_spells[spellid] = true

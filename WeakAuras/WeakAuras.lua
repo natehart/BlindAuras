@@ -1466,7 +1466,6 @@ local function scanForLoadsImpl(toCheck, event, arg1, ...)
   local inCombat = UnitAffectingCombat("player")
   local inEncounter = encounter_id ~= 0;
   local alive = not UnitIsDeadOrGhost('player')
-  local isLeader = UnitIsGroupLeader("player")
 
   if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
     local raidID = UnitInRaid("player")
@@ -1474,14 +1473,8 @@ local function scanForLoadsImpl(toCheck, event, arg1, ...)
       raidRole = select(10, GetRaidRosterInfo(raidID))
     end
     spec = 1
+    vehicle = UnitOnTaxi('player')
     role = "none"
-    if WeakAuras.IsWrathClassic() then
-      role = UnitGroupRolesAssigned("player")
-      vehicle = UnitInVehicle('player') or UnitOnTaxi('player')
-      vehicleUi = UnitHasVehicleUI('player') or HasOverrideActionBar() or HasVehicleActionBar()
-    else
-      vehicle = UnitOnTaxi('player')
-    end
   else
     spec = GetSpecialization()
     specId = GetSpecializationInfo(spec)
@@ -1527,17 +1520,14 @@ local function scanForLoadsImpl(toCheck, event, arg1, ...)
       local loadFunc = loadFuncs[id];
       local loadOpt = loadFuncsForOptions[id];
       if WeakAuras.IsClassic() then
-        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, encounter_id, size, raidRole, isLeader);
-        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, encounter_id, size, raidRole, isLeader);
+        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, encounter_id, size, raidRole);
+        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, encounter_id, size, raidRole);
       elseif WeakAuras.IsBCC() then
-        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, raidRole, isLeader);
-        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, raidRole, isLeader);
-      elseif WeakAuras.IsWrathClassic() then
-        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, vehicle, vehicleUi, group, player, realm, class, race, faction, playerLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, role, raidRole, isLeader);
-        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, vehicle, vehicleUi, group, player, realm, class, race, faction, playerLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, role, raidRole, isLeader);
+        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, raidRole);
+        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, vehicle, group, player, realm, class, race, faction, playerLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, raidRole);
       elseif WeakAuras.IsRetail() then
-        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, warmodeActive, inPetBattle, vehicle, vehicleUi, group, player, realm, class, spec, specId, covenant, race, faction, playerLevel, effectiveLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, role, isLeader, affixes);
-        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, warmodeActive, inPetBattle, vehicle, vehicleUi, group, player, realm, class, spec, specId, covenant, race, faction, playerLevel, effectiveLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, role, isLeader, affixes);
+        shouldBeLoaded = loadFunc and loadFunc("ScanForLoads_Auras", inCombat, inEncounter, alive, warmodeActive, inPetBattle, vehicle, vehicleUi, group, player, realm, class, spec, specId, covenant, race, faction, playerLevel, effectiveLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, role, affixes);
+        couldBeLoaded =  loadOpt and loadOpt("ScanForLoads_Auras",   inCombat, inEncounter, alive, warmodeActive, inPetBattle, vehicle, vehicleUi, group, player, realm, class, spec, specId, covenant, race, faction, playerLevel, effectiveLevel, zone, zoneId, zonegroupId, encounter_id, size, difficulty, difficultyIndex, role, affixes);
       end
 
       if(shouldBeLoaded and not loaded[id]) then
@@ -1629,11 +1619,6 @@ if WeakAuras.IsRetail() then
 else
   loadFrame:RegisterEvent("CHARACTER_POINTS_CHANGED")
 end
-if WeakAuras.IsWrathClassic() then
-  loadFrame:RegisterEvent("VEHICLE_UPDATE");
-  loadFrame:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
-  loadFrame:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR");
-end
 loadFrame:RegisterEvent("GROUP_ROSTER_UPDATE");
 loadFrame:RegisterEvent("ZONE_CHANGED");
 loadFrame:RegisterEvent("ZONE_CHANGED_INDOORS");
@@ -1648,7 +1633,6 @@ loadFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 loadFrame:RegisterEvent("PLAYER_DEAD")
 loadFrame:RegisterEvent("PLAYER_ALIVE")
 loadFrame:RegisterEvent("PLAYER_UNGHOST")
-loadFrame:RegisterEvent("PARTY_LEADER_CHANGED")
 
 local unitLoadFrame = CreateFrame("Frame");
 WeakAuras.unitLoadFrame = unitLoadFrame;
@@ -4163,19 +4147,12 @@ local function ReplaceValuePlaceHolders(textStr, region, customFunc, state, form
     end
 
     local index = tonumber(textStr:match("^c(%d+)$") or 1)
-
     if custom then
-      value = custom[index]
+      value = WeakAuras.EnsureString(custom[index])
     end
-
-    if value == nil then value = "" end
 
     if formatter then
       value = formatter(value, state)
-    end
-
-    if custom then
-      value = WeakAuras.EnsureString(value)
     end
   else
     local variable = Private.dynamic_texts[textStr];

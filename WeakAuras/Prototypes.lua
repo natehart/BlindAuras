@@ -1174,8 +1174,8 @@ function WeakAuras.CheckCombatLogFlags(flags, flagToCheck)
     return bit.band(flags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) == 0
   elseif (flagToCheck == "InParty") then
     return bit.band(flags, COMBATLOG_OBJECT_AFFILIATION_PARTY) > 0
-  elseif (flagToCheck == "NotInGroup") then
-    return bit.band(flags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) > 0
+  -- elseif (flagToCheck == "NotInGroup") then
+    -- return bit.band(flags, COMBATLOG_OBJECT_AFFILIATION_OUTSIDER) > 0
   end
 end
 
@@ -1218,7 +1218,7 @@ function WeakAuras.CheckRaidFlags(flags, flagToCheck)
 end
 
 function WeakAuras.IsSpellKnownForLoad(spell, exact)
-  local result = IsPlayerSpell(spell) or IsSpellKnown(spell, true)
+  local result = WeakAuras.IsSpellKnown(spell)
   if exact or result then
     return result
   end
@@ -1671,12 +1671,12 @@ Private.load_prototype = {
       display = L["Spell Known"],
       type = "spell",
       test = "WeakAuras.IsSpellKnownForLoad(%s, %s)",
-      events = {"SPELLS_CHANGED", "UNIT_PET"},
+      events = {"SPELLS_CHANGED"},
       showExactOption = true
     },
     {
       name = "covenant",
-      display = L["Player Covenant"],
+      display = WeakAuras.newFeatureString .. L["Player Covenant"],
       type = "multiselect",
       values = "covenant_types",
       init = "arg",
@@ -1789,7 +1789,7 @@ Private.load_prototype = {
     },
     {
       name = "role",
-      display = L["Assigned Role"],
+      display = L["Spec Role"],
       type = "multiselect",
       values = "role_types",
       init = "arg",
@@ -1799,21 +1799,13 @@ Private.load_prototype = {
     },
     {
       name = "raid_role",
-      display = L["Raid Role"],
+      display = WeakAuras.newFeatureString .. L["Raid Role"],
       type = "multiselect",
       values = "raid_role_types",
       init = "arg",
       enable = WeakAuras.IsClassic() or WeakAuras.IsBCC(),
       hidden = WeakAuras.IsRetail(),
       events = {"PLAYER_ROLES_ASSIGNED"}
-    },
-    {
-      name = "group_leader",
-      display = WeakAuras.newFeatureString .. L["Group Leader"],
-      type = "toggle",
-      init = "arg",
-      events = {"PARTY_LEADER_CHANGED", "GROUP_ROSTER_UPDATE"},
-      width = WeakAuras.doubleWidth,
     },
     {
       name = "affixes",
@@ -1835,7 +1827,7 @@ Private.load_prototype = {
     },
     {
       name = "itemtypeequipped",
-      display = L["Item Type Equipped"],
+      display = WeakAuras.newFeatureString .. L["Item Type Equipped"],
       type = "multiselect",
       test = "IsEquippedItemType(WeakAuras.GetItemSubClassInfo(%s))",
       events = { "UNIT_INVENTORY_CHANGED", "PLAYER_EQUIPMENT_CHANGED"},
@@ -1843,7 +1835,7 @@ Private.load_prototype = {
     },
     {
       name = "item_bonusid_equipped",
-      display =  L["Item Bonus Id Equipped"],
+      display =  WeakAuras.newFeatureString .. L["Item Bonus Id Equipped"],
       type = "string",
       test = "WeakAuras.CheckForItemBonusId(%q)",
       events = { "UNIT_INVENTORY_CHANGED", "PLAYER_EQUIPMENT_CHANGED"},
@@ -2149,7 +2141,7 @@ Private.event_prototypes = {
       },
       {
         name = "raid_role",
-        display = L["Raid Role"],
+        display = L["Assigned Role"],
         type = "select",
         init = "WeakAuras.UnitRaidRole(unit)",
         values = "raid_role_types",
@@ -2307,29 +2299,11 @@ Private.event_prototypes = {
       ]=]
       if WeakAuras.IsRetail() then
         ret = ret .. [=[
-          local friendshipRank, friendshipMaxRank
-          if factionID then
-            local friendID, friendRep, friendMaxRep, _, _, _, friendTextLevel, friendThreshold, nextFriendThreshold = GetFriendshipReputation(factionID)
-            if (friendID ~= nil) then
-              standing = friendTextLevel
-              if nextFriendThreshold then
-                bottomValue, topValue, earnedValue = friendThreshold, nextFriendThreshold, friendRep
-              else
-                -- max rank, make it look like a full bar
-                bottomValue, topValue, earnedValue = 0, 1, 1
-              end
-              friendshipRank, friendshipMaxRank = GetFriendshipReputationRanks(factionID)
-            end
-
-            if C_Reputation.IsFactionParagon(factionID) then
-              local currentValue, threshold, rewardQuestID, hasRewardPending, tooLowLevelForParagon = C_Reputation.GetFactionParagonInfo(factionID)
-              bottomValue, topValue = 0, threshold
-              earnedValue = currentValue %% threshold
-              if hasRewardPending then
-                earnedValue = earnedValue + threshold
-              end
-            end
+          local _, _, _, _, _, _, friendTextLevel = GetFriendshipReputation(factionID)
+          if friendTextLevel then
+            standing = friendTextLevel
           end
+          local friendshipRank, friendshipMaxRank = GetFriendshipReputationRanks(factionID)
         ]=]
       end
       return ret:format(trigger.factionID or 0, trigger.use_watched and "true" or "false")
@@ -2665,7 +2639,7 @@ Private.event_prototypes = {
       },
       {
         name = "deficit",
-        display = L["Health Deficit"],
+        display = WeakAuras.newFeatureString .. L["Health Deficit"],
         type = "number",
         init = "total - value",
         store = true,
@@ -2808,7 +2782,7 @@ Private.event_prototypes = {
       },
       {
         name = "raid_role",
-        display = L["Raid Role"],
+        display = L["Assigned Role"],
         type = "select",
         init = "WeakAuras.UnitRaidRole(unit)",
         values = "raid_role_types",
@@ -2837,7 +2811,7 @@ Private.event_prototypes = {
       },
       {
         name = "includePets",
-        display = L["Include Pets"],
+        display = WeakAuras.newFeatureString .. L["Include Pets"],
         type = "select",
         values = "include_pets_types",
         width = WeakAuras.normalWidth,
@@ -3116,7 +3090,7 @@ Private.event_prototypes = {
       },
       {
         name = "showChargedComboPoints",
-        display = L["Overlay Charged Combo Points"],
+        display = WeakAuras.newFeatureString .. L["Overlay Charged Combo Points"],
         type = "toggle",
         test = "true",
         reloadOptions = true,
@@ -3128,7 +3102,7 @@ Private.event_prototypes = {
       {
         name = "chargedComboPoint1",
         type = "number",
-        display = L["Charged Combo Point 1"],
+        display = WeakAuras.newFeatureString .. L["Charged Combo Point 1"],
         conditionType = "number",
         enable = function(trigger)
           return WeakAuras.IsRetail() and trigger.unit == 'player'and trigger.use_powertype and trigger.powertype == 4
@@ -3139,7 +3113,7 @@ Private.event_prototypes = {
       {
         name = "chargedComboPoint2",
         type = "number",
-        display = L["Charged Combo Point 2"],
+        display = WeakAuras.newFeatureString .. L["Charged Combo Point 2"],
         conditionType = "number",
         enable = function(trigger)
           return WeakAuras.IsRetail() and trigger.unit == 'player'and trigger.use_powertype and trigger.powertype == 4
@@ -3150,7 +3124,7 @@ Private.event_prototypes = {
       {
         name = "chargedComboPoint3",
         type = "number",
-        display = L["Charged Combo Point 3"],
+        display = WeakAuras.newFeatureString .. L["Charged Combo Point 3"],
         conditionType = "number",
         enable = function(trigger)
           return WeakAuras.IsRetail() and trigger.unit == 'player'and trigger.use_powertype and trigger.powertype == 4
@@ -3161,7 +3135,7 @@ Private.event_prototypes = {
       {
         name = "chargedComboPoint4",
         type = "number",
-        display = L["Charged Combo Point 4"],
+        display = WeakAuras.newFeatureString .. L["Charged Combo Point 4"],
         conditionType = "number",
         enable = function(trigger)
           return WeakAuras.IsRetail() and trigger.unit == 'player'and trigger.use_powertype and trigger.powertype == 4
@@ -3227,7 +3201,7 @@ Private.event_prototypes = {
       },
       {
         name = "deficit",
-        display = L["Power Deficit"],
+        display = WeakAuras.newFeatureString .. L["Power Deficit"],
         type = "number",
         init = "total - value",
         store = true,
@@ -3296,7 +3270,7 @@ Private.event_prototypes = {
       },
       {
         name = "raid_role",
-        display = L["Raid Role"],
+        display = L["Assigned Role"],
         type = "select",
         init = "WeakAuras.UnitRaidRole(unit)",
         values = "raid_role_types",
@@ -3325,7 +3299,7 @@ Private.event_prototypes = {
       },
       {
         name = "includePets",
-        display = L["Include Pets"],
+        display = WeakAuras.newFeatureString .. L["Include Pets"],
         type = "select",
         values = "include_pets_types",
         width = WeakAuras.normalWidth,
@@ -3586,7 +3560,7 @@ Private.event_prototypes = {
       },
       {
         name = "raid_role",
-        display = L["Raid Role"],
+        display = L["Assigned Role"],
         type = "select",
         init = "WeakAuras.UnitRaidRole(unit)",
         values = "raid_role_types",
@@ -3726,6 +3700,14 @@ Private.event_prototypes = {
         values = "combatlog_flags_check_type",
         init = "arg",
         store = true,
+        disabled = true,
+        enable = function(trigger)
+          trigger.use_sourceFlags = true
+          if trigger.sourceFlags == NotInGroup or not trigger.sourceFlags then
+            trigger.sourceFlags = "InGroup"
+          end
+          return trigger.use_sourceFlags
+        end,
         test = "WeakAuras.CheckCombatLogFlags(sourceFlags, %q)",
         conditionType = "select",
         conditionTest = function(state, needle)
@@ -5936,23 +5918,16 @@ Private.event_prototypes = {
   },
   ["Action Usable"] = {
     type = "spell",
-    events = function()
-      local events = {
+    events = {
+      ["events"] = {
         "SPELL_UPDATE_USABLE",
         "PLAYER_TARGET_CHANGED",
         "RUNE_POWER_UPDATE",
+      },
+      ["unit_events"] = {
+        ["player"] = { "UNIT_POWER_FREQUENT" }
       }
-      if WeakAuras.IsWrathClassic() then
-        tinsert(events, "RUNE_TYPE_UPDATE")
-      end
-
-      return {
-        ["events"] = events,
-        ["unit_events"] = {
-          ["player"] = { "UNIT_POWER_FREQUENT" }
-        }
-      }
-    end,
+    },
     internal_events = {
       "SPELL_COOLDOWN_CHANGED",
     },
@@ -7104,13 +7079,9 @@ Private.event_prototypes = {
   },
   ["Death Knight Rune"] = {
     type = "unit",
-    events = function()
-      if WeakAuras.IsWrathClassic() then
-        return { events = { "RUNE_POWER_UPDATE", "RUNE_TYPE_UPDATE"} }
-      else
-        return { events = { "RUNE_POWER_UPDATE" } }
-      end
-    end,
+    events = {
+      ["events"] = {"RUNE_POWER_UPDATE"}
+    },
     internal_events = {
       "RUNE_COOLDOWN_READY",
       "RUNE_COOLDOWN_CHANGED",
@@ -7132,80 +7103,33 @@ Private.event_prototypes = {
     end,
     init = function(trigger)
       trigger.rune = trigger.rune or 0;
-      local ret
-      if WeakAuras.IsWrathClassic() then
-        ret = [[
-          local rune = %s;
-          local genericShowOn = %s
-          local includeDeathRunes = %s;
-          local startTime, duration = WeakAuras.GetRuneCooldown(rune);
-          local numBloodRunes = 0;
-          local numUnholyRunes = 0;
-          local numFrostRunes = 0;
-          local numDeathRunes = 0;
-          local numRunes = 0;
-          local isDeathRune = GetRuneType(rune) == 4
-          for index = 1, 6 do
-            local startTime = GetRuneCooldown(index);
-            if startTime == 0 then
-              numRunes = numRunes + 1;
-              local runeType = GetRuneType(index)
-              if runeType == 1 then
-                numBloodRunes = numBloodRunes + 1;
-              elseif runeType == 2 then
-                numFrostRunes = numFrostRunes + 1;
-              elseif runeType == 3 then
-                numUnholyRunes = numUnholyRunes + 1;
-              elseif runeType == 4 then
-                numDeathRunes = numDeathRunes + 1;
-              end
-            end
-          end
-          if includeDeathRunes then
-            numBloodRunes  = numBloodRunes  + numDeathRunes;
-            numUnholyRunes = numUnholyRunes + numDeathRunes;
-            numFrostRunes  = numFrostRunes  + numDeathRunes;
-          end
-        ]];
-      else
-        ret = [[
-          local rune = %s;
-          local startTime, duration = WeakAuras.GetRuneCooldown(rune);
-          local genericShowOn = %s
-          local numRunes = 0;
-          for index = 1, 6 do
-            local startTime = WeakAuras.GetRuneCooldown(index);
-            if startTime == 0 then
-              numRunes = numRunes + 1;
-            end
-          end
-        ]];
+      local ret = [[
+      local rune = %s;
+      local startTime, duration = WeakAuras.GetRuneCooldown(rune);
+      local genericShowOn = %s
+
+      local numRunes = 0;
+      for index = 1, 6 do
+        local startTime = WeakAuras.GetRuneCooldown(index);
+        if startTime == 0 then
+          numRunes = numRunes  + 1;
+        end
       end
-      if trigger.use_remaining then
+
+    ]];
+      if(trigger.use_remaining and not trigger.use_inverse) then
         local ret2 = [[
-          local expirationTime = startTime + duration
-          local remaining = expirationTime - GetTime();
-          local remainingCheck = %s;
-          if(remaining >= remainingCheck and remaining > 0) then
-            WeakAuras.ScheduleScan(expirationTime - remainingCheck);
-          end
-        ]];
+        local expirationTime = startTime + duration
+        local remaining = expirationTime - GetTime();
+        local remainingCheck = %s;
+        if(remaining >= remainingCheck and remaining > 0) then
+          WeakAuras.ScheduleScan(expirationTime - remainingCheck);
+        end
+      ]];
         ret = ret..ret2:format(tonumber(trigger.remaining or 0) or 0);
       end
-      if WeakAuras.IsWrathClassic() then
-        return ret:format(
-          trigger.rune,
-          "[[" .. (trigger.genericShowOn or "") .. "]]",
-          (trigger.use_includeDeathRunes and "true" or "false")
-        );
-      else
-        return ret:format(
-          trigger.rune,
-          "[[" .. (trigger.genericShowOn or "") .. "]]"
-        );
-      end
+      return ret:format(trigger.rune, "[[" .. (trigger.genericShowOn or "") .. "]]");
     end,
-    statesParameter = "one",
     args = {
       {
         name = "rune",
@@ -7213,19 +7137,10 @@ Private.event_prototypes = {
         type = "select",
         values = "rune_specific_types",
         test = "(genericShowOn == \"showOnReady\" and (startTime == 0)) " ..
-        "or (genericShowOn == \"showOnCooldown\" and startTime > 0) " ..
+        "or (genericShowOn == \"showOnCooldown\" and startTime > 0) "  ..
         "or (genericShowOn == \"showAlways\")",
+        enable = function(trigger) return not trigger.use_runesCount end,
         reloadOptions = true
-      },
-      {
-        name = "isDeathRune",
-        display = L["Is Death Rune"],
-        type = "tristate",
-        init = "isDeathRune",
-        store = true,
-        conditionType = "bool",
-        enable = function(trigger) return WeakAuras.IsWrathClassic() and trigger.use_rune end,
-        hidden = not WeakAuras.IsWrathClassic()
       },
       {
         name = "remaining",
@@ -7244,7 +7159,7 @@ Private.event_prototypes = {
       },
       {
         name = "runesCount",
-        display = L["Rune Count"],
+        display = L["Runes Count"],
         type = "number",
         init = "numRunes",
         enable = function(trigger) return not trigger.use_rune end
@@ -7260,54 +7175,24 @@ Private.event_prototypes = {
         end,
         enable = function(trigger) return trigger.use_rune end
       },
-      {
-        name = "bloodRunes",
-        display = L["Rune Count - Blood"],
-        type = "number",
-        init = "numBloodRunes",
-        store = true,
-        conditionType = "number",
-        enable = function(trigger) return WeakAuras.IsWrathClassic() and not trigger.use_rune end,
-        hidden = not WeakAuras.IsWrathClassic()
-      },
-      {
-        name = "frostRunes",
-        display = L["Rune Count - Frost"],
-        type = "number",
-        init = "numFrostRunes",
-        store = true,
-        conditionType = "number",
-        enable = function(trigger) return WeakAuras.IsWrathClassic() and not trigger.use_rune end,
-        hidden = not WeakAuras.IsWrathClassic()
-      },
-      {
-        name = "unholyRunes",
-        display = L["Rune Count - Unholy"],
-        type = "number",
-        init = "numUnholyRunes",
-        store = true,
-        conditionType = "number",
-        enable = function(trigger) return WeakAuras.IsWrathClassic() and not trigger.use_rune end,
-        hidden = not WeakAuras.IsWrathClassic()
-      },
-      {
-        name = "includeDeathRunes",
-        display = L["Include Death Runes"],
-        type = "toggle",
-        test = "true",
-        enable = function(trigger) return WeakAuras.IsWrathClassic() and trigger.use_bloodRunes or trigger.use_unholyRunes or trigger.use_frostRunes end,
-        hidden = not WeakAuras.IsWrathClassic()
-      },
     },
     durationFunc = function(trigger)
       if trigger.use_rune then
-        local startTime, duration = WeakAuras.GetRuneCooldown(trigger.rune)
-        return duration, startTime + duration
+        local startTime, duration
+        if not(trigger.use_inverse) then
+          startTime, duration = WeakAuras.GetRuneCooldown(trigger.rune);
+        end
+
+        startTime = startTime or 0;
+        duration = duration or 0;
+
+        return duration, startTime + duration;
       else
         local numRunes = 0;
         for index = 1, 6 do
-          if GetRuneCooldown(index) == 0 then
-            numRunes = numRunes + 1;
+          local startTime = GetRuneCooldown(index);
+          if startTime == 0 then
+            numRunes = numRunes  + 1;
           end
         end
         return numRunes, 6, true;
@@ -7316,32 +7201,15 @@ Private.event_prototypes = {
     stacksFunc = function(trigger)
       local numRunes = 0;
       for index = 1, 6 do
-        if GetRuneCooldown(index) == 0 then
+        local startTime = select(1, GetRuneCooldown(index));
+        if startTime == 0 then
           numRunes = numRunes  + 1;
         end
       end
       return numRunes;
     end,
-    nameFunc = function(trigger)
-      if WeakAuras.IsWrathClassic() then
-        local runeNames = { L["Blood"], L["Frost"], L["Unholy"], L["Death"] }
-        return runeNames[GetRuneType(trigger.rune)];
-      end
-    end,
     iconFunc = function(trigger)
-      if WeakAuras.IsWrathClassic() then
-        if trigger.rune then
-          local runeIcons = {
-            "Interface\\PlayerFrame\\UI-PlayerFrame-Deathknight-Blood",
-            "Interface\\PlayerFrame\\UI-PlayerFrame-Deathknight-Frost",
-            "Interface\\PlayerFrame\\UI-PlayerFrame-Deathknight-Unholy",
-            "Interface\\PlayerFrame\\UI-PlayerFrame-Deathknight-Death"
-          };
-          return runeIcons[GetRuneType(trigger.rune)];
-        end
-      else
-        return "Interface\\PlayerFrame\\UI-PlayerFrame-Deathknight-SingleRune";
-      end
+      return "Interface\\PlayerFrame\\UI-PlayerFrame-Deathknight-SingleRune";
     end,
     automaticrequired = true,
   },
@@ -7687,7 +7555,7 @@ Private.event_prototypes = {
           threatpct, rawthreatpct, threatvalue, threattotal = 100, 100, 0, 100
         end
       ]];
-      return ret .. unitHelperFunctions.SpecificUnitCheck(trigger);
+      return ret;
     end,
     canHaveDuration = true,
     statesParameter = "unit",
@@ -7769,10 +7637,6 @@ Private.event_prototypes = {
       {
         hidden = true,
         test = "status ~= nil and ok"
-      },
-      {
-        hidden = true,
-        test = "WeakAuras.UnitExistsFixed(unit, smart) and specificUnitCheck"
       }
     },
     automaticrequired = true
@@ -8168,7 +8032,7 @@ Private.event_prototypes = {
       },
       {
         name = "raid_role",
-        display = L["Raid Role"],
+        display = L["Assigned Role"],
         type = "select",
         init = "WeakAuras.UnitRaidRole(unit)",
         values = "raid_role_types",
@@ -8198,7 +8062,7 @@ Private.event_prototypes = {
       },
       {
         name = "includePets",
-        display = L["Include Pets"],
+        display = WeakAuras.newFeatureString .. L["Include Pets"],
         type = "select",
         values = "include_pets_types",
         width = WeakAuras.normalWidth,
@@ -9309,9 +9173,7 @@ if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
   if not UnitDetailedThreatSituation then
     Private.event_prototypes["Threat Situation"] = nil
   end
-  if not WeakAuras.IsWrathClassic() then
-    Private.event_prototypes["Death Knight Rune"] = nil
-  end
+  Private.event_prototypes["Death Knight Rune"] = nil
   Private.event_prototypes["Alternate Power"] = nil
   Private.event_prototypes["Equipment Set"] = nil
   Private.event_prototypes["Spell Activation Overlay"] = nil
@@ -9320,10 +9182,6 @@ if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
   Private.event_prototypes["Class/Spec"] = nil
 else
   Private.event_prototypes["Queued Action"] = nil
-end
-
-if WeakAuras.IsWrathClassic() then
-  Private.event_prototypes["Swing Timer"] = nil
 end
 
 Private.category_event_prototype = {}
