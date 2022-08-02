@@ -1893,9 +1893,9 @@ Private.event_categories = {
     name = L["Other Events"],
     default = "Chat Message"
   },
-  custom = {
-    name = L["Custom"],
-  }
+  -- custom = {
+  --   name = L["Custom"],
+  -- }
 }
 
 Private.event_prototypes = {

@@ -1170,7 +1170,7 @@ function GenericTrigger.Add(data, region)
     local triggerType;
     if(trigger and type(trigger) == "table") then
       triggerType = trigger.type;
-      if(Private.category_event_prototype[triggerType] or triggerType == "custom") then
+      if(Private.category_event_prototype[triggerType]) then
         local triggerFuncStr, triggerFunc, untriggerFunc, statesParameter;
         local trigger_events = {};
         local internal_events = {};
@@ -4168,7 +4168,7 @@ end
 
 
 local types = {}
-tinsert(types, "custom")
+-- tinsert(types, "custom")
 for type in pairs(Private.category_event_prototype) do
   tinsert(types, type)
 end
