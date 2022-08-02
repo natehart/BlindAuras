@@ -81,11 +81,6 @@ local properties = {
     setter = "SetCooldownEdge",
     type = "bool",
   },
-  cooldownText = {
-    display = { L["Cooldown"], L["Hide Timer Text"]},
-    setter = "SetHideCountdownNumbers",
-    type = "bool",
-  },
   zoom = {
     display = L["Zoom"],
     setter = "SetZoom",
@@ -376,14 +371,10 @@ local function modify(parent, region, data)
   end
 
   cooldown:SetReverse(not data.inverse);
-
-  function region:SetHideCountdownNumbers(cooldownTextDisabled)
-    cooldown:SetHideCountdownNumbers(cooldownTextDisabled);
-    if OmniCC and OmniCC.Cooldown and OmniCC.Cooldown.SetNoCooldownCount then
-      OmniCC.Cooldown.SetNoCooldownCount(cooldown, cooldownTextDisabled)
-    end
+  cooldown:SetHideCountdownNumbers(data.cooldownTextDisabled);
+  if OmniCC and OmniCC.Cooldown and OmniCC.Cooldown.SetNoCooldownCount then
+    OmniCC.Cooldown.SetNoCooldownCount(cooldown, data.cooldownTextDisabled)
   end
-  region:SetHideCountdownNumbers(data.cooldownTextDisabled)
 
   function region:Color(r, g, b, a)
     region.color_r = r;

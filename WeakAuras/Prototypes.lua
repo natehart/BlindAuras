@@ -1881,10 +1881,10 @@ Private.event_categories = {
     name = L["Player/Unit Info"],
     default = "Health"
   },
-  addons = {
-    name = L["Other Addons"],
-    default = "GTFO"
-  },
+  -- addons = {
+  --   name = L["Other Addons"],
+  --   default = "GTFO"
+  -- },
   combatlog = {
     name = L["Combat Log"],
     default = "Combat Log",
@@ -5080,564 +5080,564 @@ Private.event_prototypes = {
     hasItemID = true,
     timedrequired = true
   },
-  ["GTFO"] = {
-    type = "addons",
-    events = {
-      ["events"] = {"GTFO_DISPLAY"}
-    },
-    name = L["GTFO Alert"],
-    statesParameter = "one",
-    args = {
-      {
-        name = "alertType",
-        display = L["Alert Type"],
-        type = "select",
-        init = "arg",
-        values = "gtfo_types",
-        store = true,
-        conditionType = "select"
-      },
-    },
-    timedrequired = true
-  },
-  -- DBM events
-  ["DBM Stage"] = {
-    type = "addons",
-    events = {},
-    internal_events = {
-      "DBM_SetStage"
-    },
-    name = L["DBM Stage"],
-    init = function(trigger)
-      WeakAuras.RegisterDBMCallback("DBM_SetStage");
-      return ""
-    end,
-    args = {
-      {
-        name = "stage",
-        init = "WeakAuras.GetDBMStage()",
-        display = L["Journal Stage"],
-        desc = L["Matches stage number of encounter journal.\nIntermissions are .5\nE.g. 1;2;1;2;2.5;3"],
-        type = "number",
-        conditionType = "number",
-        store = true,
-      },
-      {
-        name = "stageTotal",
-        init = "select(2, WeakAuras.GetDBMStage())",
-        display = L["Stage Counter"],
-        desc = L["Increases by one per stage or intermission."],
-        type = "number",
-        conditionType = "number",
-        store = true,
-      },
-    },
-    automaticrequired = true,
-    statesParameter = "one",
-  },
-  ["DBM Announce"] = {
-    type = "addons",
-    events = {},
-    internal_events = {
-      "DBM_Announce"
-    },
-    name = L["DBM Announce"],
-    init = function(trigger)
-      WeakAuras.RegisterDBMCallback("DBM_Announce");
-      local ret = "local use_cloneId = %s;"
-      return ret:format(trigger.use_cloneId and "true" or "false");
-    end,
-    statesParameter = "all",
-    args = {
-      {
-        name = "message",
-        init = "arg",
-        display = L["Message"],
-        type = "longstring",
-        store = true,
-        conditionType = "string"
-      },
-      {
-        name = "name",
-        init = "message",
-        hidden = true,
-        test = "true",
-        store = true,
-      },
-      {
-        name = "icon",
-        init = "arg",
-        store = true,
-        hidden = true,
-        test = "true"
-      },
-      {
-        name = "cloneId",
-        display = L["Clone per Event"],
-        type = "toggle",
-        test = "true",
-        init = "use_cloneId and WeakAuras.GetUniqueCloneId() or ''"
-      },
-    },
-    timedrequired = true
-  },
-  ["DBM Timer"] = {
-    type = "addons",
-    events = {},
-    internal_events = {
-      "DBM_TimerStart", "DBM_TimerStop", "DBM_TimerStopAll", "DBM_TimerUpdate", "DBM_TimerForce", "DBM_TimerResume", "DBM_TimerPause"
-    },
-    force_events = "DBM_TimerForce",
-    name = L["DBM Timer"],
-    canHaveDuration = "timed",
-    triggerFunction = function(trigger)
-      WeakAuras.RegisterDBMCallback("DBM_TimerStart")
-      WeakAuras.RegisterDBMCallback("DBM_TimerStop")
-      WeakAuras.RegisterDBMCallback("DBM_TimerPause")
-      WeakAuras.RegisterDBMCallback("DBM_TimerResume")
-      WeakAuras.RegisterDBMCallback("DBM_TimerUpdate")
-      WeakAuras.RegisterDBMCallback("wipe")
-      WeakAuras.RegisterDBMCallback("kill")
-
-      local ret = [=[
-        return function (states, event, id)
-          local triggerId = %q
-          local triggerSpellId = %q
-          local triggerText = %q
-          local triggerTextOperator = %q
-          local useClone = %s
-          local extendTimer = %s
-          local triggerUseRemaining = %s
-          local triggerRemaining = %s
-          local triggerCount = %q
-          local triggerDbmType = %s
-          local cloneId = useClone and id or ""
-          local state = states[cloneId]
-
-          function copyOrSchedule(bar, cloneId)
-            if triggerUseRemaining then
-              local remainingTime
-              if bar.paused then
-                remainingTime = bar.remaining + extendTimer
-              else
-                remainingTime = bar.expirationTime - GetTime() + extendTimer
-              end
-              if remainingTime %s triggerRemaining then
-                WeakAuras.CopyBarToState(bar, states, cloneId, extendTimer)
-              else
-                local state = states[cloneId]
-                if state and state.show then
-                  state.show = false
-                  state.changed = true
-                end
-              end
-              if remainingTime >= triggerRemaining and not bar.paused then
-                WeakAuras.ScheduleDbmCheck(bar.expirationTime - triggerRemaining + extendTimer)
-              end
-            else
-              WeakAuras.CopyBarToState(bar, states, cloneId, extendTimer)
-            end
-          end
-
-          if useClone then
-            if event == "DBM_TimerStart"
-            or event == "DBM_TimerPause"
-            or event == "DBM_TimerResume"
-            then
-              if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
-                local bar = WeakAuras.GetDBMTimerById(id)
-                if bar then
-                  copyOrSchedule(bar, cloneId)
-                end
-              end
-            elseif event == "DBM_TimerStop" and state then
-              local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
-              if state.extend == 0 or bar_remainingTime > 0.2 then
-                state.show = false
-                state.changed = true
-              end
-            elseif event == "DBM_TimerUpdate" then
-              for id, bar in pairs(WeakAuras.GetAllDBMTimers()) do
-                if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
-                  copyOrSchedule(bar, id)
-                else
-                  local state = states[id]
-                  if state then
-                    local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
-                    if state.extend == 0 or bar_remainingTime > 0.2 then
-                      state.show = false
-                      state.changed = true
-                    end
-                  end
-                end
-              end
-            elseif event == "DBM_TimerForce" then
-              wipe(states)
-              for id, bar in pairs(WeakAuras.GetAllDBMTimers()) do
-                if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
-                  copyOrSchedule(bar, cloneId)
-                end
-              end
-            end
-          else
-            if event == "DBM_TimerStart" or event == "DBM_TimerUpdate" then
-              if extendTimer ~= 0 then
-                if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
-                  local bar = WeakAuras.GetDBMTimerById(id)
-                  WeakAuras.ScheduleDbmCheck(bar.expirationTime + extendTimer)
-                end
-              end
-            end
-            local bar = WeakAuras.GetDBMTimer(triggerId, triggerText, triggerTextOperator, triggerSpellId, extendTimer, triggerDbmType, triggerCount)
-            if bar then
-              if extendTimer == 0
-                or not (state and state.show)
-                or (state and state.show and state.expirationTime > (bar.expirationTime + extendTimer))
-              then
-                copyOrSchedule(bar, cloneId)
-              end
-            else
-              if state and state.show then
-                local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
-                if state.extend == 0 or bar_remainingTime > 0.2 then
-                  state.show = false
-                  state.changed = true
-                end
-              end
-            end
-          end
-          return true
-        end
-        ]=]
-
-      return ret:format(
-        trigger.use_id and trigger.id or "",
-        trigger.use_spellId and trigger.spellId or "",
-        trigger.use_message and trigger.message or "",
-        trigger.use_message and trigger.message_operator or "",
-        trigger.use_cloneId and "true" or "false",
-        trigger.use_extend and tonumber(trigger.extend or 0) or 0,
-        trigger.use_remaining and "true" or "false",
-        trigger.remaining or 0,
-        trigger.use_count and trigger.count or "",
-        trigger.use_dbmType and trigger.dbmType or "nil",
-        trigger.remaining_operator or "<"
-      )
-    end,
-    statesParameter = "full",
-    args = {
-      {
-        name = "id",
-        display = L["Timer Id"],
-        type = "string",
-      },
-      {
-        name = "spellId",
-        display = L["Spell Id"],
-        type = "string",
-        store = true,
-        conditionType = "string"
-      },
-      {
-        name = "message",
-        display = L["Message"],
-        type = "longstring",
-        store = true,
-        conditionType = "string"
-      },
-      {
-        name = "remaining",
-        display = L["Remaining Time"],
-        type = "number",
-      },
-      {
-        name = "extend",
-        display = L["Offset Timer"],
-        type = "string",
-      },
-      {
-        name = "count",
-        display = L["Count"],
-        desc = L["Only if DBM shows it on it's bar"],
-        type = "string",
-        conditionType = "string",
-      },
-      {
-        name = "dbmType",
-        display = L["Type"],
-        type = "select",
-        values = "dbm_types",
-        conditionType = "select",
-        test = "true"
-      },
-      {
-        name = "cloneId",
-        display = L["Clone per Event"],
-        type = "toggle"
-      }
-    },
-    automaticrequired = true,
-  },
-  -- BigWigs
-  ["BigWigs Stage"] = {
-    type = "addons",
-    events = {},
-    internal_events = {
-      "BigWigs_SetStage"
-    },
-    name = L["BigWigs Stage"],
-    init = function(trigger)
-      WeakAuras.RegisterBigWigsCallback("BigWigs_SetStage");
-      return ""
-    end,
-    args = {
-      {
-        name = "stage",
-        init = "WeakAuras.GetBigWigsStage()",
-        display = L["Stage"],
-        type = "number",
-        conditionType = "number",
-        store = true,
-      }
-    },
-    automaticrequired = true,
-    statesParameter = "one",
-  },
-  ["BigWigs Message"] = {
-    type = "addons",
-    events = {},
-    internal_events = {
-      "BigWigs_Message"
-    },
-    name = L["BigWigs Message"],
-    init = function(trigger)
-      WeakAuras.RegisterBigWigsCallback("BigWigs_Message");
-      local ret = "local use_cloneId = %s;"
-      return ret:format(trigger.use_cloneId and "true" or "false");
-    end,
-    statesParameter = "all",
-    args = {
-      {
-        name = "addon",
-        init = "arg",
-        display = L["BigWigs Addon"],
-        type = "string"
-      },
-      {
-        name = "spellId",
-        init = "arg",
-        display = L["Spell Id"],
-        type = "longstring"
-      },
-      {
-        name = "text",
-        init = "arg",
-        display = L["Message"],
-        type = "longstring",
-        store = true,
-        conditionType = "string"
-      },
-      {
-        name = "name",
-        init = "text",
-        hidden = true,
-        test = "true",
-        store = true
-      },
-      {}, -- Importance, might be useful
-      {
-        name = "icon",
-        init = "arg",
-        hidden = true,
-        test = "true",
-        store = true
-      },
-      {
-        name = "cloneId",
-        display = L["Clone per Event"],
-        type = "toggle",
-        test = "true",
-        init = "use_cloneId and WeakAuras.GetUniqueCloneId() or ''"
-      },
-    },
-    timedrequired = true
-  },
-  ["BigWigs Timer"] = {
-    type = "addons",
-    events = {},
-    internal_events = {
-      "BigWigs_StartBar", "BigWigs_StopBar", "BigWigs_Timer_Update", "BigWigs_PauseBar", "BigWigs_ResumeBar"
-    },
-    force_events = "BigWigs_Timer_Force",
-    name = L["BigWigs Timer"],
-    canHaveDuration = "timed",
-    triggerFunction = function(trigger)
-      WeakAuras.RegisterBigWigsTimer()
-      local ret = [=[
-        return function(states, event, id)
-          local triggerSpellId = %q
-          local triggerText = %q
-          local triggerTextOperator = %q
-          local useClone = %s
-          local extendTimer = %s
-          local triggerUseRemaining = %s
-          local triggerRemaining = %s
-          local triggerCount = %q
-          local triggerCast = %s
-          local cloneId = useClone and id or ""
-          local state = states[cloneId]
-
-          function copyOrSchedule(bar, cloneId)
-            if triggerUseRemaining then
-              local remainingTime
-              if bar.paused then
-                remainingTime = bar.remaining + extendTimer
-              else
-                remainingTime = bar.expirationTime - GetTime() + extendTimer
-              end
-              if remainingTime %s triggerRemaining then
-                WeakAuras.CopyBigWigsTimerToState(bar, states, cloneId, extendTimer)
-              else
-                local state = states[cloneId]
-                if state and state.show then
-                  state.show = false
-                  state.changed = true
-                end
-              end
-              if remainingTime >= triggerRemaining and not bar.paused then
-                WeakAuras.ScheduleBigWigsCheck(bar.expirationTime - triggerRemaining + extendTimer)
-              end
-            else
-              WeakAuras.CopyBigWigsTimerToState(bar, states, cloneId, extendTimer)
-            end
-          end
-
-          if useClone then
-            if event == "BigWigs_StartBar"
-            or event == "BigWigs_PauseBar"
-            or event == "BigWigs_ResumeBar"
-            then
-              if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
-                local bar = WeakAuras.GetBigWigsTimerById(id)
-                if bar then
-                  copyOrSchedule(bar, cloneId)
-                end
-              end
-            elseif event == "BigWigs_StopBar" and state then
-              local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
-              if state.extend == 0 or bar_remainingTime > 0.2 then
-                state.show = false
-                state.changed = true
-              end
-            elseif event == "BigWigs_Timer_Update" then
-              for id, bar in pairs(WeakAuras.GetAllBigWigsTimers()) do
-                if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
-                  copyOrSchedule(bar, id)
-                end
-              end
-            elseif event == "BigWigs_Timer_Force" then
-              wipe(states)
-              for id, bar in pairs(WeakAuras.GetAllBigWigsTimers()) do
-                if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
-                  copyOrSchedule(bar, id)
-                end
-              end
-            end
-          else
-            if event == "BigWigs_StartBar" then
-              if extendTimer ~= 0 then
-                if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
-                  local bar = WeakAuras.GetBigWigsTimerById(id)
-                  WeakAuras.ScheduleBigWigsCheck(bar.expirationTime + extendTimer)
-                end
-              end
-            end
-            local bar = WeakAuras.GetBigWigsTimer(triggerText, triggerTextOperator, triggerSpellId, extendTimer, triggerCount, triggerCast)
-            if bar then
-              if extendTimer == 0
-                or not (state and state.show)
-                or (state and state.show and state.expirationTime > (bar.expirationTime + extendTimer))
-              then
-                copyOrSchedule(bar, cloneId)
-              end
-            else
-              if state and state.show then
-                local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
-                if state.extend == 0 or bar_remainingTime > 0.2 then
-                  state.show = false
-                  state.changed = true
-                end
-              end
-            end
-          end
-          return true
-        end
-      ]=]
-      return ret:format(
-        trigger.use_spellId and trigger.spellId or "",
-        trigger.use_text and trigger.text or "",
-        trigger.use_text and trigger.text_operator or "",
-        trigger.use_cloneId and "true" or "false",
-        trigger.use_extend and tonumber(trigger.extend or 0) or 0,
-        trigger.use_remaining and "true" or "false",
-        trigger.remaining or 0,
-        trigger.use_count and trigger.count or "",
-        trigger.use_cast == nil and "nil" or trigger.use_cast and "true" or "false",
-        trigger.remaining_operator or "<"
-      )
-    end,
-    statesParameter = "full",
-    args = {
-      {
-        name = "spellId",
-        display = L["Spell Id"],
-        type = "string",
-        conditionType = "string",
-      },
-      {
-        name = "text",
-        display = L["Message"],
-        type = "longstring",
-        store = true,
-        conditionType = "string"
-      },
-      {
-        name = "remaining",
-        display = L["Remaining Time"],
-        type = "number",
-      },
-      {
-        name = "extend",
-        display = L["Offset Timer"],
-        type = "string",
-      },
-      {
-        name = "count",
-        display = L["Count"],
-        desc = L["Only if BigWigs shows it on it's bar"],
-        type = "string",
-        store = true,
-        conditionType = "string",
-      },
-      {
-        name = "cast",
-        display = L["Cast Bar"],
-        desc = L["Filter messages with format <message>"],
-        type = "tristate",
-        test = "true",
-        init = "false",
-        conditionType = "bool"
-      },
-      {
-        name = "cloneId",
-        display = L["Clone per Event"],
-        type = "toggle",
-        test = "true",
-        init = "false"
-      },
-    },
-    automaticrequired = true,
-  },
+  -- ["GTFO"] = {
+  --   type = "addons",
+  --   events = {
+  --     ["events"] = {"GTFO_DISPLAY"}
+  --   },
+  --   name = L["GTFO Alert"],
+  --   statesParameter = "one",
+  --   args = {
+  --     {
+  --       name = "alertType",
+  --       display = L["Alert Type"],
+  --       type = "select",
+  --       init = "arg",
+  --       values = "gtfo_types",
+  --       store = true,
+  --       conditionType = "select"
+  --     },
+  --   },
+  --   timedrequired = true
+  -- },
+  -- -- DBM events
+  -- ["DBM Stage"] = {
+  --   type = "addons",
+  --   events = {},
+  --   internal_events = {
+  --     "DBM_SetStage"
+  --   },
+  --   name = L["DBM Stage"],
+  --   init = function(trigger)
+  --     WeakAuras.RegisterDBMCallback("DBM_SetStage");
+  --     return ""
+  --   end,
+  --   args = {
+  --     {
+  --       name = "stage",
+  --       init = "WeakAuras.GetDBMStage()",
+  --       display = L["Journal Stage"],
+  --       desc = L["Matches stage number of encounter journal.\nIntermissions are .5\nE.g. 1;2;1;2;2.5;3"],
+  --       type = "number",
+  --       conditionType = "number",
+  --       store = true,
+  --     },
+  --     {
+  --       name = "stageTotal",
+  --       init = "select(2, WeakAuras.GetDBMStage())",
+  --       display = L["Stage Counter"],
+  --       desc = L["Increases by one per stage or intermission."],
+  --       type = "number",
+  --       conditionType = "number",
+  --       store = true,
+  --     },
+  --   },
+  --   automaticrequired = true,
+  --   statesParameter = "one",
+  -- },
+  -- ["DBM Announce"] = {
+  --   type = "addons",
+  --   events = {},
+  --   internal_events = {
+  --     "DBM_Announce"
+  --   },
+  --   name = L["DBM Announce"],
+  --   init = function(trigger)
+  --     WeakAuras.RegisterDBMCallback("DBM_Announce");
+  --     local ret = "local use_cloneId = %s;"
+  --     return ret:format(trigger.use_cloneId and "true" or "false");
+  --   end,
+  --   statesParameter = "all",
+  --   args = {
+  --     {
+  --       name = "message",
+  --       init = "arg",
+  --       display = L["Message"],
+  --       type = "longstring",
+  --       store = true,
+  --       conditionType = "string"
+  --     },
+  --     {
+  --       name = "name",
+  --       init = "message",
+  --       hidden = true,
+  --       test = "true",
+  --       store = true,
+  --     },
+  --     {
+  --       name = "icon",
+  --       init = "arg",
+  --       store = true,
+  --       hidden = true,
+  --       test = "true"
+  --     },
+  --     {
+  --       name = "cloneId",
+  --       display = L["Clone per Event"],
+  --       type = "toggle",
+  --       test = "true",
+  --       init = "use_cloneId and WeakAuras.GetUniqueCloneId() or ''"
+  --     },
+  --   },
+  --   timedrequired = true
+  -- },
+  -- ["DBM Timer"] = {
+  --   type = "addons",
+  --   events = {},
+  --   internal_events = {
+  --     "DBM_TimerStart", "DBM_TimerStop", "DBM_TimerStopAll", "DBM_TimerUpdate", "DBM_TimerForce", "DBM_TimerResume", "DBM_TimerPause"
+  --   },
+  --   force_events = "DBM_TimerForce",
+  --   name = L["DBM Timer"],
+  --   canHaveDuration = "timed",
+  --   triggerFunction = function(trigger)
+  --     WeakAuras.RegisterDBMCallback("DBM_TimerStart")
+  --     WeakAuras.RegisterDBMCallback("DBM_TimerStop")
+  --     WeakAuras.RegisterDBMCallback("DBM_TimerPause")
+  --     WeakAuras.RegisterDBMCallback("DBM_TimerResume")
+  --     WeakAuras.RegisterDBMCallback("DBM_TimerUpdate")
+  --     WeakAuras.RegisterDBMCallback("wipe")
+  --     WeakAuras.RegisterDBMCallback("kill")
+  --
+  --     local ret = [=[
+  --       return function (states, event, id)
+  --         local triggerId = %q
+  --         local triggerSpellId = %q
+  --         local triggerText = %q
+  --         local triggerTextOperator = %q
+  --         local useClone = %s
+  --         local extendTimer = %s
+  --         local triggerUseRemaining = %s
+  --         local triggerRemaining = %s
+  --         local triggerCount = %q
+  --         local triggerDbmType = %s
+  --         local cloneId = useClone and id or ""
+  --         local state = states[cloneId]
+  --
+  --         function copyOrSchedule(bar, cloneId)
+  --           if triggerUseRemaining then
+  --             local remainingTime
+  --             if bar.paused then
+  --               remainingTime = bar.remaining + extendTimer
+  --             else
+  --               remainingTime = bar.expirationTime - GetTime() + extendTimer
+  --             end
+  --             if remainingTime %s triggerRemaining then
+  --               WeakAuras.CopyBarToState(bar, states, cloneId, extendTimer)
+  --             else
+  --               local state = states[cloneId]
+  --               if state and state.show then
+  --                 state.show = false
+  --                 state.changed = true
+  --               end
+  --             end
+  --             if remainingTime >= triggerRemaining and not bar.paused then
+  --               WeakAuras.ScheduleDbmCheck(bar.expirationTime - triggerRemaining + extendTimer)
+  --             end
+  --           else
+  --             WeakAuras.CopyBarToState(bar, states, cloneId, extendTimer)
+  --           end
+  --         end
+  --
+  --         if useClone then
+  --           if event == "DBM_TimerStart"
+  --           or event == "DBM_TimerPause"
+  --           or event == "DBM_TimerResume"
+  --           then
+  --             if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
+  --               local bar = WeakAuras.GetDBMTimerById(id)
+  --               if bar then
+  --                 copyOrSchedule(bar, cloneId)
+  --               end
+  --             end
+  --           elseif event == "DBM_TimerStop" and state then
+  --             local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
+  --             if state.extend == 0 or bar_remainingTime > 0.2 then
+  --               state.show = false
+  --               state.changed = true
+  --             end
+  --           elseif event == "DBM_TimerUpdate" then
+  --             for id, bar in pairs(WeakAuras.GetAllDBMTimers()) do
+  --               if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
+  --                 copyOrSchedule(bar, id)
+  --               else
+  --                 local state = states[id]
+  --                 if state then
+  --                   local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
+  --                   if state.extend == 0 or bar_remainingTime > 0.2 then
+  --                     state.show = false
+  --                     state.changed = true
+  --                   end
+  --                 end
+  --               end
+  --             end
+  --           elseif event == "DBM_TimerForce" then
+  --             wipe(states)
+  --             for id, bar in pairs(WeakAuras.GetAllDBMTimers()) do
+  --               if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
+  --                 copyOrSchedule(bar, cloneId)
+  --               end
+  --             end
+  --           end
+  --         else
+  --           if event == "DBM_TimerStart" or event == "DBM_TimerUpdate" then
+  --             if extendTimer ~= 0 then
+  --               if WeakAuras.DBMTimerMatches(id, triggerId, triggerText, triggerTextOperator, triggerSpellId, triggerDbmType, triggerCount) then
+  --                 local bar = WeakAuras.GetDBMTimerById(id)
+  --                 WeakAuras.ScheduleDbmCheck(bar.expirationTime + extendTimer)
+  --               end
+  --             end
+  --           end
+  --           local bar = WeakAuras.GetDBMTimer(triggerId, triggerText, triggerTextOperator, triggerSpellId, extendTimer, triggerDbmType, triggerCount)
+  --           if bar then
+  --             if extendTimer == 0
+  --               or not (state and state.show)
+  --               or (state and state.show and state.expirationTime > (bar.expirationTime + extendTimer))
+  --             then
+  --               copyOrSchedule(bar, cloneId)
+  --             end
+  --           else
+  --             if state and state.show then
+  --               local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
+  --               if state.extend == 0 or bar_remainingTime > 0.2 then
+  --                 state.show = false
+  --                 state.changed = true
+  --               end
+  --             end
+  --           end
+  --         end
+  --         return true
+  --       end
+  --       ]=]
+  --
+  --     return ret:format(
+  --       trigger.use_id and trigger.id or "",
+  --       trigger.use_spellId and trigger.spellId or "",
+  --       trigger.use_message and trigger.message or "",
+  --       trigger.use_message and trigger.message_operator or "",
+  --       trigger.use_cloneId and "true" or "false",
+  --       trigger.use_extend and tonumber(trigger.extend or 0) or 0,
+  --       trigger.use_remaining and "true" or "false",
+  --       trigger.remaining or 0,
+  --       trigger.use_count and trigger.count or "",
+  --       trigger.use_dbmType and trigger.dbmType or "nil",
+  --       trigger.remaining_operator or "<"
+  --     )
+  --   end,
+  --   statesParameter = "full",
+  --   args = {
+  --     {
+  --       name = "id",
+  --       display = L["Timer Id"],
+  --       type = "string",
+  --     },
+  --     {
+  --       name = "spellId",
+  --       display = L["Spell Id"],
+  --       type = "string",
+  --       store = true,
+  --       conditionType = "string"
+  --     },
+  --     {
+  --       name = "message",
+  --       display = L["Message"],
+  --       type = "longstring",
+  --       store = true,
+  --       conditionType = "string"
+  --     },
+  --     {
+  --       name = "remaining",
+  --       display = L["Remaining Time"],
+  --       type = "number",
+  --     },
+  --     {
+  --       name = "extend",
+  --       display = L["Offset Timer"],
+  --       type = "string",
+  --     },
+  --     {
+  --       name = "count",
+  --       display = L["Count"],
+  --       desc = L["Only if DBM shows it on it's bar"],
+  --       type = "string",
+  --       conditionType = "string",
+  --     },
+  --     {
+  --       name = "dbmType",
+  --       display = L["Type"],
+  --       type = "select",
+  --       values = "dbm_types",
+  --       conditionType = "select",
+  --       test = "true"
+  --     },
+  --     {
+  --       name = "cloneId",
+  --       display = L["Clone per Event"],
+  --       type = "toggle"
+  --     }
+  --   },
+  --   automaticrequired = true,
+  -- },
+  -- -- BigWigs
+  -- ["BigWigs Stage"] = {
+  --   type = "addons",
+  --   events = {},
+  --   internal_events = {
+  --     "BigWigs_SetStage"
+  --   },
+  --   name = L["BigWigs Stage"],
+  --   init = function(trigger)
+  --     WeakAuras.RegisterBigWigsCallback("BigWigs_SetStage");
+  --     return ""
+  --   end,
+  --   args = {
+  --     {
+  --       name = "stage",
+  --       init = "WeakAuras.GetBigWigsStage()",
+  --       display = L["Stage"],
+  --       type = "number",
+  --       conditionType = "number",
+  --       store = true,
+  --     }
+  --   },
+  --   automaticrequired = true,
+  --   statesParameter = "one",
+  -- },
+  -- ["BigWigs Message"] = {
+  --   type = "addons",
+  --   events = {},
+  --   internal_events = {
+  --     "BigWigs_Message"
+  --   },
+  --   name = L["BigWigs Message"],
+  --   init = function(trigger)
+  --     WeakAuras.RegisterBigWigsCallback("BigWigs_Message");
+  --     local ret = "local use_cloneId = %s;"
+  --     return ret:format(trigger.use_cloneId and "true" or "false");
+  --   end,
+  --   statesParameter = "all",
+  --   args = {
+  --     {
+  --       name = "addon",
+  --       init = "arg",
+  --       display = L["BigWigs Addon"],
+  --       type = "string"
+  --     },
+  --     {
+  --       name = "spellId",
+  --       init = "arg",
+  --       display = L["Spell Id"],
+  --       type = "longstring"
+  --     },
+  --     {
+  --       name = "text",
+  --       init = "arg",
+  --       display = L["Message"],
+  --       type = "longstring",
+  --       store = true,
+  --       conditionType = "string"
+  --     },
+  --     {
+  --       name = "name",
+  --       init = "text",
+  --       hidden = true,
+  --       test = "true",
+  --       store = true
+  --     },
+  --     {}, -- Importance, might be useful
+  --     {
+  --       name = "icon",
+  --       init = "arg",
+  --       hidden = true,
+  --       test = "true",
+  --       store = true
+  --     },
+  --     {
+  --       name = "cloneId",
+  --       display = L["Clone per Event"],
+  --       type = "toggle",
+  --       test = "true",
+  --       init = "use_cloneId and WeakAuras.GetUniqueCloneId() or ''"
+  --     },
+  --   },
+  --   timedrequired = true
+  -- },
+  -- ["BigWigs Timer"] = {
+  --   type = "addons",
+  --   events = {},
+  --   internal_events = {
+  --     "BigWigs_StartBar", "BigWigs_StopBar", "BigWigs_Timer_Update", "BigWigs_PauseBar", "BigWigs_ResumeBar"
+  --   },
+  --   force_events = "BigWigs_Timer_Force",
+  --   name = L["BigWigs Timer"],
+  --   canHaveDuration = "timed",
+  --   triggerFunction = function(trigger)
+  --     WeakAuras.RegisterBigWigsTimer()
+  --     local ret = [=[
+  --       return function(states, event, id)
+  --         local triggerSpellId = %q
+  --         local triggerText = %q
+  --         local triggerTextOperator = %q
+  --         local useClone = %s
+  --         local extendTimer = %s
+  --         local triggerUseRemaining = %s
+  --         local triggerRemaining = %s
+  --         local triggerCount = %q
+  --         local triggerCast = %s
+  --         local cloneId = useClone and id or ""
+  --         local state = states[cloneId]
+  --
+  --         function copyOrSchedule(bar, cloneId)
+  --           if triggerUseRemaining then
+  --             local remainingTime
+  --             if bar.paused then
+  --               remainingTime = bar.remaining + extendTimer
+  --             else
+  --               remainingTime = bar.expirationTime - GetTime() + extendTimer
+  --             end
+  --             if remainingTime %s triggerRemaining then
+  --               WeakAuras.CopyBigWigsTimerToState(bar, states, cloneId, extendTimer)
+  --             else
+  --               local state = states[cloneId]
+  --               if state and state.show then
+  --                 state.show = false
+  --                 state.changed = true
+  --               end
+  --             end
+  --             if remainingTime >= triggerRemaining and not bar.paused then
+  --               WeakAuras.ScheduleBigWigsCheck(bar.expirationTime - triggerRemaining + extendTimer)
+  --             end
+  --           else
+  --             WeakAuras.CopyBigWigsTimerToState(bar, states, cloneId, extendTimer)
+  --           end
+  --         end
+  --
+  --         if useClone then
+  --           if event == "BigWigs_StartBar"
+  --           or event == "BigWigs_PauseBar"
+  --           or event == "BigWigs_ResumeBar"
+  --           then
+  --             if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
+  --               local bar = WeakAuras.GetBigWigsTimerById(id)
+  --               if bar then
+  --                 copyOrSchedule(bar, cloneId)
+  --               end
+  --             end
+  --           elseif event == "BigWigs_StopBar" and state then
+  --             local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
+  --             if state.extend == 0 or bar_remainingTime > 0.2 then
+  --               state.show = false
+  --               state.changed = true
+  --             end
+  --           elseif event == "BigWigs_Timer_Update" then
+  --             for id, bar in pairs(WeakAuras.GetAllBigWigsTimers()) do
+  --               if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
+  --                 copyOrSchedule(bar, id)
+  --               end
+  --             end
+  --           elseif event == "BigWigs_Timer_Force" then
+  --             wipe(states)
+  --             for id, bar in pairs(WeakAuras.GetAllBigWigsTimers()) do
+  --               if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
+  --                 copyOrSchedule(bar, id)
+  --               end
+  --             end
+  --           end
+  --         else
+  --           if event == "BigWigs_StartBar" then
+  --             if extendTimer ~= 0 then
+  --               if WeakAuras.BigWigsTimerMatches(id, triggerText, triggerTextOperator, triggerSpellId, triggerCount, triggerCast) then
+  --                 local bar = WeakAuras.GetBigWigsTimerById(id)
+  --                 WeakAuras.ScheduleBigWigsCheck(bar.expirationTime + extendTimer)
+  --               end
+  --             end
+  --           end
+  --           local bar = WeakAuras.GetBigWigsTimer(triggerText, triggerTextOperator, triggerSpellId, extendTimer, triggerCount, triggerCast)
+  --           if bar then
+  --             if extendTimer == 0
+  --               or not (state and state.show)
+  --               or (state and state.show and state.expirationTime > (bar.expirationTime + extendTimer))
+  --             then
+  --               copyOrSchedule(bar, cloneId)
+  --             end
+  --           else
+  --             if state and state.show then
+  --               local bar_remainingTime = GetTime() - state.expirationTime + (state.extend or 0)
+  --               if state.extend == 0 or bar_remainingTime > 0.2 then
+  --                 state.show = false
+  --                 state.changed = true
+  --               end
+  --             end
+  --           end
+  --         end
+  --         return true
+  --       end
+  --     ]=]
+  --     return ret:format(
+  --       trigger.use_spellId and trigger.spellId or "",
+  --       trigger.use_text and trigger.text or "",
+  --       trigger.use_text and trigger.text_operator or "",
+  --       trigger.use_cloneId and "true" or "false",
+  --       trigger.use_extend and tonumber(trigger.extend or 0) or 0,
+  --       trigger.use_remaining and "true" or "false",
+  --       trigger.remaining or 0,
+  --       trigger.use_count and trigger.count or "",
+  --       trigger.use_cast == nil and "nil" or trigger.use_cast and "true" or "false",
+  --       trigger.remaining_operator or "<"
+  --     )
+  --   end,
+  --   statesParameter = "full",
+  --   args = {
+  --     {
+  --       name = "spellId",
+  --       display = L["Spell Id"],
+  --       type = "string",
+  --       conditionType = "string",
+  --     },
+  --     {
+  --       name = "text",
+  --       display = L["Message"],
+  --       type = "longstring",
+  --       store = true,
+  --       conditionType = "string"
+  --     },
+  --     {
+  --       name = "remaining",
+  --       display = L["Remaining Time"],
+  --       type = "number",
+  --     },
+  --     {
+  --       name = "extend",
+  --       display = L["Offset Timer"],
+  --       type = "string",
+  --     },
+  --     {
+  --       name = "count",
+  --       display = L["Count"],
+  --       desc = L["Only if BigWigs shows it on it's bar"],
+  --       type = "string",
+  --       store = true,
+  --       conditionType = "string",
+  --     },
+  --     {
+  --       name = "cast",
+  --       display = L["Cast Bar"],
+  --       desc = L["Filter messages with format <message>"],
+  --       type = "tristate",
+  --       test = "true",
+  --       init = "false",
+  --       conditionType = "bool"
+  --     },
+  --     {
+  --       name = "cloneId",
+  --       display = L["Clone per Event"],
+  --       type = "toggle",
+  --       test = "true",
+  --       init = "false"
+  --     },
+  --   },
+  --   automaticrequired = true,
+  -- },
   ["Global Cooldown"] = {
     type = "spell",
     events = {},
