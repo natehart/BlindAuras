@@ -49,7 +49,7 @@ Returns the a tooltip for the additional properties.
 GetTriggerConditions(data, triggernum)
 Returns potential conditions that this trigger provides.
 ]]--
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 local AddonName, Private = ...
 
 -- Lua APIs
@@ -1170,7 +1170,7 @@ function GenericTrigger.Add(data, region)
     local triggerType;
     if(trigger and type(trigger) == "table") then
       triggerType = trigger.type;
-      if(Private.category_event_prototype[triggerType] or triggerType == "custom") then
+      if(Private.category_event_prototype[triggerType]) then
         local triggerFuncStr, triggerFunc, untriggerFunc, statesParameter;
         local trigger_events = {};
         local internal_events = {};
@@ -1492,7 +1492,7 @@ local oldPowerTriggers = {
 do
   local mh = GetInventorySlotInfo("MainHandSlot")
   local oh = GetInventorySlotInfo("SecondaryHandSlot")
-  local ranged = WeakAuras.IsClassicOrBCCOrWrath() and GetInventorySlotInfo("RangedSlot")
+  local ranged = (WeakAuras.IsClassic() or WeakAuras.IsBCC()) and GetInventorySlotInfo("RangedSlot")
 
   local swingTimerFrame;
   local lastSwingMain, lastSwingOff, lastSwingRange;
@@ -1682,7 +1682,7 @@ do
         end)
       end
       if Private.reset_ranged_swing_spells[spell] then
-        if WeakAuras.IsClassicOrBCCOrWrath() then
+        if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
           swingStart("ranged")
         else
           swingStart("main")
@@ -1714,7 +1714,7 @@ do
       swingTimerFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
       swingTimerFrame:RegisterUnitEvent("UNIT_ATTACK_SPEED", "player");
       swingTimerFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player");
-      if WeakAuras.IsClassicOrBCCOrWrath() then
+      if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
         swingTimerFrame:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
         swingTimerFrame:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
         swingTimerFrame:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
@@ -1785,7 +1785,7 @@ do
   local function CheckGCD()
     local event;
     local startTime, duration, _, modRate
-    if WeakAuras.IsClassicOrBCCOrWrath() then
+    if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
       startTime, duration = GetSpellCooldown(29515);
       shootStart, shootDuration = GetSpellCooldown(5019)
     else
@@ -1868,7 +1868,7 @@ do
 
     if duration > 0 then
       if (startTime == gcdStart and duration == gcdDuration)
-          or (WeakAuras.IsClassicOrBCCOrWrath() and duration == shootDuration and startTime == shootStart)
+          or ((WeakAuras.IsClassic() or WeakAuras.IsBCC()) and duration == shootDuration and startTime == shootStart)
       then
         -- GCD cooldown, this could mean that the spell reset!
         if self.expirationTime[id] and self.expirationTime[id] > endTime and self.expirationTime[id] ~= 0 then
@@ -1953,16 +1953,12 @@ do
     cdReadyFrame:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN");
     cdReadyFrame:RegisterEvent("SPELLS_CHANGED");
     cdReadyFrame:RegisterEvent("PLAYER_ENTERING_WORLD");
-    if WeakAuras.IsWrathClassic() then
-      cdReadyFrame:RegisterEvent("RUNE_POWER_UPDATE");
-      cdReadyFrame:RegisterEvent("RUNE_TYPE_UPDATE");
-    end
     cdReadyFrame:SetScript("OnEvent", function(self, event, ...)
       Private.StartProfileSystem("generictrigger cd tracking");
       if(event == "SPELL_UPDATE_COOLDOWN" or event == "SPELL_UPDATE_CHARGES"
         or event == "RUNE_POWER_UPDATE" or event == "ACTIONBAR_UPDATE_COOLDOWN"
         or event == "PLAYER_TALENT_UPDATE" or event == "PLAYER_PVP_TALENT_UPDATE"
-        or event == "CHARACTER_POINTS_CHANGED" or event == "RUNE_TYPE_UPDATE") then
+        or event == "CHARACTER_POINTS_CHANGED") then
         Private.CheckCooldownReady();
       elseif(event == "SPELLS_CHANGED") then
         Private.CheckSpellKnown();
@@ -2485,7 +2481,7 @@ do
 
     if not id or id == 0 then return end
 
-    if ignoreRunes and WeakAuras.IsWrathOrRetail() then
+    if ignoreRunes and WeakAuras.IsRetail() then
       for i = 1, 6 do
         WeakAuras.WatchRuneCooldown(i);
       end
@@ -2706,14 +2702,13 @@ function WeakAuras.WatchUnitChange(unit)
             if inRaidChanged then
               WeakAuras.ScanEvents("UNIT_CHANGED_" .. unit, unit)
             else
-              if WeakAuras.IsClassicOrBCCOrWrath() then
+              if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
                 local newRaidRole = WeakAuras.UnitRaidRole(unit)
                 if watchUnitChange.unitRaidRole[unit] ~= newRaidRole then
                   watchUnitChange.unitRaidRole[unit] = newRaidRole
                   WeakAuras.ScanEvents("UNIT_ROLE_CHANGED_" .. unit, unit)
                 end
-              end
-              if WeakAuras.IsWrathOrRetail() then
+              else
                 local newRole = UnitGroupRolesAssigned(unit)
                 if watchUnitChange.unitRoles[unit] ~= newRole then
                   watchUnitChange.unitRoles[unit] = newRole
@@ -3306,7 +3301,7 @@ do
     if not(tenchFrame) then
       tenchFrame = CreateFrame("Frame");
       tenchFrame:RegisterEvent("UNIT_INVENTORY_CHANGED");
-      if WeakAuras.IsClassicOrBCCOrWrath() then
+      if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
         tenchFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
       end
 
@@ -4173,7 +4168,7 @@ end
 
 
 local types = {}
-tinsert(types, "custom")
+-- tinsert(types, "custom")
 for type in pairs(Private.category_event_prototype) do
   tinsert(types, type)
 end

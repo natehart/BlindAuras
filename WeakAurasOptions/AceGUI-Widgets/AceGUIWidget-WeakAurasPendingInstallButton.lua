@@ -1,9 +1,12 @@
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() then
+  return
+end
+
 local AddonName, OptionsPrivate = ...
 
 local pairs, next, type, unpack = pairs, next, type, unpack
 
-local Type, Version = "WeakAurasPendingInstallButton", 3
+local Type, Version = "WeakAurasPendingInstallButton", 2
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
 
 if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then

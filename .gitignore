@@ -8,6 +8,7 @@ format.bat
 **/desktop.ini
 .DS_Store
 .release
+.idea
 .install
 .lua/*
 .vscode
