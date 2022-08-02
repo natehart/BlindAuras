@@ -1,4 +1,3 @@
-if not WeakAuras.IsLibsOK() then return end
 --[[-----------------------------------------------------------------------------
 Spacer Widget
 Just uses up a bit of horizontal space

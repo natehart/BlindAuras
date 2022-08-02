@@ -1,4 +1,3 @@
-if not WeakAuras.IsLibsOK() then return end
 --[[-----------------------------------------------------------------------------
 Progress Bar Widget
 A simple progress bar

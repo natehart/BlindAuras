@@ -1,4 +1,4 @@
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 local AddonName, OptionsPrivate = ...
 
 local L = WeakAuras.L
@@ -724,7 +724,7 @@ local function GetBuffTriggerOptions(data, triggernum)
       width = WeakAuras.doubleWidth,
       hidden = function()
         return not (trigger.type == "aura2" and trigger.unit ~= "multi")
-               or WeakAuras.IsClassicOrBCCOrWrath()
+               or WeakAuras.IsClassic() or WeakAuras.IsBCC()
       end
     },
     fetchRaidMark = {
@@ -771,7 +771,7 @@ local function GetBuffTriggerOptions(data, triggernum)
       order = 67.1,
       hidden = function() return
         not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party"))
-        or WeakAuras.IsClassicOrBCC()
+        or WeakAuras.IsClassic() or WeakAuras.IsBCC()
       end
     },
     group_role = {
@@ -779,10 +779,7 @@ local function GetBuffTriggerOptions(data, triggernum)
       width = WeakAuras.normalWidth,
       name = L["Group Role"],
       values = OptionsPrivate.Private.role_types,
-      hidden = function() return
-        not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party") and trigger.useGroupRole)
-        or WeakAuras.IsClassicOrBCC()
-      end,
+      hidden = function() return not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party") and trigger.useGroupRole) end,
       order = 67.2
     },
     group_roleSpace = {
@@ -790,10 +787,7 @@ local function GetBuffTriggerOptions(data, triggernum)
       name = "",
       order = 67.2,
       width = WeakAuras.normalWidth,
-      hidden = function() return
-        not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party") and not trigger.useGroupRole)
-        or WeakAuras.IsClassicOrBCC()
-      end
+      hidden = function() return not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party") and not trigger.useGroupRole) end
     },
     useRaidRole = {
       type = "toggle",
@@ -810,10 +804,7 @@ local function GetBuffTriggerOptions(data, triggernum)
       width = WeakAuras.normalWidth,
       name = L["Raid Role"],
       values = OptionsPrivate.Private.raid_role_types,
-      hidden = function() return
-        not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party") and trigger.useRaidRole)
-        or WeakAuras.IsRetail()
-      end,
+      hidden = function() return not (trigger.type == "aura2" and (trigger.unit == "group" or trigger.unit == "raid" or trigger.unit == "party") and trigger.useRaidRole) end,
       order = 67.2
     },
     raid_roleSpace = {

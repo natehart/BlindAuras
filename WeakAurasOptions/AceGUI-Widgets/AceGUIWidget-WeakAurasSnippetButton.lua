@@ -1,4 +1,3 @@
-if not WeakAuras.IsLibsOK() then return end
 --[[-----------------------------------------------------------------------------
 SnippetButton Widget, based on AceGUI Button (and WA ToolbarButton)
 Graphical Button.

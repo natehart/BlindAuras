@@ -1,4 +1,4 @@
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 local AddonName, Private = ...
 
 local WeakAuras = WeakAuras;
@@ -940,7 +940,7 @@ do
     [23] = true,
     [33] = true
   }
-  if WeakAuras.IsClassicOrBCCOrWrath() then
+  if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
     unplayableRace[9] = true
   end
 
@@ -1831,7 +1831,7 @@ if WeakAuras.IsClassic() then -- Classic
       runes[tostring(v)] = nil
     end
   end
-elseif WeakAuras.IsBCCOrWrath() then
+elseif WeakAuras.IsBCC() then
   Private.texture_types["Blizzard Alerts"] = nil
   do
     local beams = Private.texture_types["Beams"]
@@ -2049,7 +2049,7 @@ Private.swing_types = {
   ["off"] = SECONDARYHANDSLOT
 }
 
-if WeakAuras.IsClassicOrBCCOrWrath() then
+if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
   Private.swing_types["ranged"] = RANGEDSLOT
 end
 
@@ -2347,7 +2347,7 @@ if WeakAuras.IsRetail() then
     lfr = PLAYER_DIFFICULTY3,
     challenge = PLAYER_DIFFICULTY5
   }
-elseif WeakAuras.IsBCCOrWrath() then
+elseif WeakAuras.IsBCC() then
   Private.difficulty_types = {
     none = L["None"],
     normal = PLAYER_DIFFICULTY1,
@@ -2356,14 +2356,13 @@ elseif WeakAuras.IsBCCOrWrath() then
 end
 
 
-if WeakAuras.IsClassicOrBCCOrWrath() then
+if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
   Private.raid_role_types = {
     MAINTANK = "|TInterface\\GroupFrame\\UI-Group-maintankIcon:16:16|t "..MAINTANK,
     MAINASSIST = "|TInterface\\GroupFrame\\UI-Group-mainassistIcon:16:16|t "..MAINASSIST,
     NONE = L["Other"]
   }
-end
-if WeakAuras.IsWrathOrRetail() then
+else
   Private.role_types = {
     TANK = INLINE_TANK_ICON.." "..TANK,
     DAMAGER = INLINE_DAMAGER_ICON.." "..DAMAGER,
@@ -3261,7 +3260,7 @@ if WeakAuras.IsRetail() then
   end
 end
 
-if WeakAuras.IsBCCOrWrathOrRetail() then
+if WeakAuras.IsRetail() or WeakAuras.IsBCC() then
   for i = 1, 5 do
     Private.baseUnitId["arena"..i] = true
     Private.multiUnitUnits.arena["arena"..i] = true
@@ -3367,7 +3366,7 @@ skippedWeaponTypes[11] = true -- Bear Claws
 skippedWeaponTypes[12] = true -- Cat Claws
 skippedWeaponTypes[14] = true -- Misc
 skippedWeaponTypes[17] = true -- Spears
-if WeakAuras.IsClassicOrBCCOrWrath() then
+if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
   skippedWeaponTypes[9] = true -- Glaives
 else
   skippedWeaponTypes[16] = true -- Thrown
@@ -3549,7 +3548,7 @@ if WeakAuras.IsClassic() then
   end
 end
 
-if WeakAuras.IsBCCOrWrath() then
+if WeakAuras.IsBCC() then
   Private.item_slot_types[0] = AMMOSLOT
   Private.item_slot_types[18] = RANGEDSLOT
   Private.talent_extra_option_types[0] = nil

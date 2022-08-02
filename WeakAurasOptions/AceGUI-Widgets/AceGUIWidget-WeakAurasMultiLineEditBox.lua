@@ -1,4 +1,4 @@
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 
 local Type, Version = "WeakAurasMultiLineEditBox", 36
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)

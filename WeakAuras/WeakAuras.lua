@@ -120,6 +120,11 @@ end
 
 SLASH_WEAKAURAS1, SLASH_WEAKAURAS2 = "/weakauras", "/wa";
 function SlashCmdList.WEAKAURAS(input)
+  if not WeakAuras.IsCorrectVersion() then
+    prettyPrint(Private.wrongTargetMessage)
+    return
+  end
+
   local args, msg = {}, nil
 
   for v in string.gmatch(input, "%S+") do
@@ -149,7 +154,7 @@ function SlashCmdList.WEAKAURAS(input)
   end
 end
 
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 
 function Private.ToggleMinimap()
   WeakAurasSaved.minimap.hide = not WeakAurasSaved.minimap.hide
@@ -763,7 +768,7 @@ local function CreateTalentCache()
 
   Private.talent_types_specific[player_class] = Private.talent_types_specific[player_class] or {};
 
-  if WeakAuras.IsClassicOrBCCOrWrath() then
+  if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
     for tab = 1, GetNumTalentTabs() do
       for num_talent = 1, GetNumTalents(tab) do
         local talentName, talentIcon = GetTalentInfo(tab, num_talent);
@@ -1463,7 +1468,7 @@ local function scanForLoadsImpl(toCheck, event, arg1, ...)
   local alive = not UnitIsDeadOrGhost('player')
   local isLeader = UnitIsGroupLeader("player")
 
-  if WeakAuras.IsClassicOrBCCOrWrath() then
+  if WeakAuras.IsClassic() or WeakAuras.IsBCC() then
     local raidID = UnitInRaid("player")
     if raidID then
       raidRole = select(10, GetRaidRosterInfo(raidID))
@@ -1650,7 +1655,7 @@ WeakAuras.unitLoadFrame = unitLoadFrame;
 WeakAuras.frames["Display Load Handling 2"] = unitLoadFrame;
 
 unitLoadFrame:RegisterUnitEvent("UNIT_FLAGS", "player");
-if WeakAuras.IsWrathOrRetail() then
+if WeakAuras.IsRetail() then
   unitLoadFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player");
   unitLoadFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player");
   unitLoadFrame:RegisterUnitEvent("PLAYER_FLAGS_CHANGED", "player");
