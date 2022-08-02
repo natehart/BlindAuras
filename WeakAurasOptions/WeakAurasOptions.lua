@@ -879,10 +879,6 @@ function OptionsPrivate.ImportFromString()
   frame.importexport:Open("import");
 end
 
-function OptionsPrivate.OpenDebugLog(text)
-  frame.debugLog:Open(text)
-end
-
 function OptionsPrivate.OpenUpdate(data, children, target, sender)
   return frame.update:Open(data, children, target, sender)
 end
