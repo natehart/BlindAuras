@@ -1,4 +1,4 @@
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 local AddonName, OptionsPrivate = ...
 
 local L = WeakAuras.L;
@@ -453,9 +453,7 @@ local function GetGenericTriggerOptions(data, triggernum)
     },
   }
 
-  if (triggerType == "custom") then
-    Mixin(options, GetCustomTriggerOptions(data, triggernum));
-  elseif (OptionsPrivate.Private.category_event_prototype[triggerType]) then
+  if (triggerType ~= "custom" and OptionsPrivate.Private.category_event_prototype[triggerType]) then
     local prototypeOptions;
     local trigger = data.triggers[triggernum].trigger
     if(OptionsPrivate.Private.event_prototypes[trigger.event]) then
@@ -470,7 +468,6 @@ local function GetGenericTriggerOptions(data, triggernum)
       Mixin(options, prototypeOptions);
     end
   end
-
 
   return {
     ["trigger." .. triggernum .. "." .. (trigger.event or "unknown")] = options

@@ -1,4 +1,4 @@
-if not WeakAuras.IsLibsOK() then return end
+if not WeakAuras.IsCorrectVersion() or not WeakAuras.IsLibsOK() then return end
 local AddonName, OptionsPrivate = ...
 
 local L = WeakAuras.L
@@ -264,7 +264,8 @@ function OptionsPrivate.ConstructOptions(prototype, data, startorder, triggernum
           order = order,
           hidden = hidden,
           desc = arg.desc,
-          get = function() return trigger["use_"..realname]; end,
+          disabled = arg.disabled or false,
+          get = function() return trigger["use_"..realname] end,
           set = function(info, v)
             trigger["use_"..realname] = v;
             WeakAuras.Add(data);
